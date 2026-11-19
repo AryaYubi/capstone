@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gap Planner - Prototype Awal</title>
+<style>
+  :root {
+    --bg: #f3f6fb;
+    --card: #ffffff;
+    --ink: #101a2b;
+    --muted: #5d6b80;
+    --line: #dfe5ee;
+    --accent: #1d5fd6;
+    --accent-ink: #ffffff;
+    --soft: #e7efff;
+    --good: #12805c;
+    --good-bg: #e2f5ee;
+    --warn: #b45f06;
+    --warn-bg: #fff1dc;
+    --warn-line: #f0b44c;
+    --bad: #b3261e;
+    --bad-bg: #fde8e6;
+    --shadow: 0 1px 2px rgba(16,26,43,.06), 0 6px 18px rgba(16,26,43,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1320;
+      --card: #151f31;
+      --ink: #e8eef8;
+      --muted: #9fadc2;
+      --line: #263349;
+      --accent: #6aa3ff;
+      --accent-ink: #0a1426;
+      --soft: #1a2c4d;
+      --good: #5fd3a8;
+      --good-bg: #123428;
+      --warn: #f2b45a;
+      --warn-bg: #33270f;
+      --warn-line: #8a6416;
+      --bad: #ff8f86;
+      --bad-bg: #3a1a18;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.45;
+  }
+  .app {
+    max-width: 440px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 0 16px 96px;
+    position: relative;
+  }
+  /* Header */
+  .top { padding: 18px 0 8px; }
+  .brandrow { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center; font-weight: 800; font-size: 15px;
+  }
+  .brand { font-weight: 700; font-size: 17px; }
+  .brand small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; margin-top: -2px; }
+  .stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; }
+  .stepper span { height: 5px; border-radius: 99px; background: var(--line); }
+  .stepper span.on { background: var(--accent); }
+  .steplabel { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  h1 { font-size: 26px; line-height: 1.15; margin: 14px 0 6px; letter-spacing: -.01em; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .lead { color: var(--muted); margin: 0 0 16px; font-size: 15px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  label, .lbl { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  select, input[type="time"], input[type="text"] {
+    width: 100%;
+    font: inherit;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 48px;
+  }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .swapwrap { display: flex; justify-content: center; margin: -4px 0 6px; }
+  .swap {
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--soft); border: 0; border-radius: 99px; padding: 8px 14px; min-height: 36px; cursor: pointer;
+  }
+  .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+  .btn {
+    display: block; width: 100%;
+    font: inherit; font-weight: 700;
+    padding: 14px; min-height: 52px;
+    border-radius: 14px;
+    border: 1px solid var(--accent);
+    background: var(--accent); color: var(--accent-ink);
+    cursor: pointer; margin-top: 8px;
+  }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.small { min-height: 44px; padding: 10px; font-size: 14px; }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible, select:focus-visible, input:focus-visible, .tab:focus-visible, .swap:focus-visible, .del:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+  .error { color: var(--bad); font-size: 14px; margin: 8px 0 0; min-height: 20px; }
+
+  /* Mode cards */
+  .mode { display: flex; align-items: center; gap: 12px; }
+  .ico {
+    width: 44px; height: 44px; flex: none; border-radius: 12px;
+    background: var(--soft); display: grid; place-items: center; font-size: 22px;
+  }
+  .mode .mid { flex: 1; min-width: 0; }
+  .mode .name { font-weight: 700; }
+  .mode .sub { color: var(--muted); font-size: 13px; }
+  .mode .time { font-size: 22px; font-weight: 800; text-align: right; line-height: 1.1; }
+  .mode .time small { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+  .chip.good { background: var(--good-bg); color: var(--good); }
+  .chip.bad { background: var(--bad-bg); color: var(--bad); }
+  .chip.neutral { background: var(--soft); color: var(--accent); }
+  .tag { display: inline-block; font-size: 12px; background: var(--soft); color: var(--accent); padding: 3px 10px; border-radius: 99px; font-weight: 700; }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 12px; }
+  .mode.off { opacity: .6; }
+
+  /* Advice */
+  .advice { border-color: var(--accent); background: linear-gradient(180deg, var(--soft), var(--card)); }
+  .honest { border-color: var(--warn-line); background: var(--warn-bg); }
+  .clock { font-size: 44px; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin: 8px 0 4px; }
+  .big { font-size: 19px; font-weight: 700; margin: 6px 0; }
+  ul.plain { margin: 8px 0 0; padding-left: 20px; }
+  .bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--line); margin: 14px 0 6px; }
+  .bar i { display: block; min-width: 3px; }
+  .bar .slack { background: var(--line); }
+  .bar .trip { background: var(--accent); }
+  .bar .buf { background: var(--good); opacity: .55; }
+  .bar .late { background: var(--bad); }
+  .barends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+
+  /* Reminder */
+  .radio { display: flex; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; min-height: 48px; cursor: pointer; background: var(--bg); }
+  .radio:has(input:checked) { border-color: var(--accent); background: var(--soft); }
+  .radio input { width: 20px; height: 20px; accent-color: var(--accent); }
+  .radio label { margin: 0; font-weight: 500; flex: 1; cursor: pointer; }
+  .notif { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--bg); display: flex; gap: 10px; }
+  .notif .logo { width: 30px; height: 30px; font-size: 13px; flex: none; }
+  .notif .t { font-size: 12px; color: var(--muted); }
+  .notif .m { font-size: 14px; font-weight: 600; }
+  .summary dt { font-size: 13px; color: var(--muted); }
+  .summary dd { margin: 0 0 10px; font-weight: 600; }
+  .summary dd:last-child { margin-bottom: 0; }
+
+  .remitem { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .remitem:first-child { border-top: 0; padding-top: 0; }
+  .remitem .rt { font-size: 24px; font-weight: 800; min-width: 74px; }
+  .remitem .rx { flex: 1; min-width: 0; font-size: 14px; }
+  .remitem .rx small { display: block; color: var(--muted); }
+  .remitem.fresh { animation: flash 1.6s ease-out; }
+  @keyframes flash { from { background: var(--soft); } to { background: transparent; } }
+  .del { font: inherit; font-size: 13px; font-weight: 600; color: var(--bad); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 40px; cursor: pointer; }
+  .empty { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* Tabs */
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: var(--card); border-top: 1px solid var(--line);
+  }
+  .tabs .in { max-width: 440px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); gap: 8px; }
+  .tab {
+    font: inherit; font-weight: 700; font-size: 14px; color: var(--muted);
+    background: transparent; border: 0; border-radius: 12px; min-height: 52px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  .tab .e { font-size: 18px; }
+  .tab[aria-current="page"] { color: var(--accent); background: var(--soft); }
+  .badge { background: var(--accent); color: var(--accent-ink); border-radius: 99px; font-size: 11px; padding: 1px 7px; margin-left: 4px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 84px; transform: translate(-50%, 20px);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 99px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 10; max-width: 90vw; text-align: center;
+  }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+  footer { padding: 8px 0; font-size: 12px; color: var(--muted); text-align: center; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brandrow">
+      <div class="logo" aria-hidden="true">GP</div>
+      <div class="brand">Gap Planner<small>Tahu kapan harus berangkat</small></div>
+    </div>
+    <div id="progress" hidden>
+      <div class="stepper" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="steplabel" id="stepLabel">Langkah 1 dari 4</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="planTab">
+      <!-- Layar 1 -->
+      <section id="s1" aria-labelledby="t1">
+        <h1 id="t1">Kelas berikutnya</h1>
+        <p class="lead">Pilih lokasi asal dan tujuan, lalu isi jamnya.</p>
+        <div class="card">
+          <div class="field">
+            <label for="from">Dari (kelas sekarang)</label>
+            <select id="from"></select>
+          </div>
+          <div class="swapwrap"><button type="button" class="swap" id="swap" aria-label="Tukar asal dan tujuan">&#8645; Tukar</button></div>
+          <div class="field">
+            <label for="to">Ke (kelas berikutnya)</label>
+            <select id="to"></select>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="out">Kelas sekarang bubar</label>
+              <input type="time" id="out" value="10:00">
+            </div>
+            <div class="field">
+              <label for="start">Kelas berikutnya mulai</label>
+              <input type="time" id="start" value="10:20">
+            </div>
+          </div>
+          <div class="field">
+            <label for="friend">Ada teman yang bisa kamu tebengi?</label>
+            <select id="friend">
+              <option value="no">Belum ada / belum tahu</option>
+              <option value="yes">Ada, sudah janjian</option>
+            </select>
+            <p class="hint">Tebengan hanya dihitung bila kamu sudah janjian dengan temanmu.</p>
+          </div>
+          <p class="error" id="err1" role="alert"></p>
+        </div>
+        <button class="btn" id="go1">Lihat perkiraan</button>
+      </section>
+
+      <!-- Layar 2 -->
+      <section id="s2" aria-labelledby="t2" hidden>
+        <h1 id="t2">Perkiraan waktu</h1>
+        <p class="lead" id="gapText"></p>
+        <span class="tag">Perkiraan, bukan jaminan</span>
+        <p class="note">Angka pada prototype ini adalah data contoh untuk mencoba alur, bukan hasil pengukuran.</p>
+        <div id="modes"></div>
+        <button class="btn" id="go2">Lihat saran</button>
+        <button class="btn ghost" id="back2">Ubah kelas</button>
+      </section>
+
+      <!-- Layar 3A -->
+      <section id="s3a" aria-labelledby="t3a" hidden>
+        <h1 id="t3a">Saran berangkat</h1>
+        <div class="card advice">
+          <span class="tag" id="adviceTag">Saran</span>
+          <div class="clock" id="adviceClock"></div>
+          <div class="big" id="adviceMain"></div>
+          <div id="adviceWhy"></div>
+          <div class="bar" id="barA" role="img" aria-label="Pembagian jeda: santai, perjalanan, cadangan"></div>
+          <div class="barends"><span id="endL"></span><span id="endR"></span></div>
+          <div class="legend"><span><b style="background:var(--line)"></b>Santai</span><span><b style="background:var(--accent)"></b>Perjalanan</span><span><b style="background:var(--good);opacity:.55"></b>Cadangan</span></div>
+        </div>
+        <button class="btn" id="go3a">Atur pengingat</button>
+        <button class="btn ghost" id="back3a">Kembali</button>
+      </section>
+
+      <!-- Layar 3B -->
+      <section id="s3b" aria-labelledby="t3b" hidden>
+        <h1 id="t3b">Jedanya terlalu mepet</h1>
+        <div class="card honest">
+          <div class="big" id="lateMain"></div>
+          <div>Tidak ada moda yang cukup cepat untuk jeda ini.</div>
+          <div class="bar" id="barB" role="img" aria-label="Perjalanan lebih lama dari jeda"></div>
+          <div class="barends"><span id="endL2"></span><span id="endR2"></span></div>
+          <div class="legend"><span><b style="background:var(--accent)"></b>Dalam jeda</span><span><b style="background:var(--bad)"></b>Melebihi jeda</span></div>
+          <ul class="plain">
+            <li>Pertimbangkan mengabari dosen atau teman.</li>
+            <li>Tidak perlu berlari atau mengambil risiko.</li>
+          </ul>
+        </div>
+        <button class="btn" id="go3b">Atur pengingat</button>
+        <button class="btn ghost" id="back3b">Kembali</button>
+      </section>
+
+      <!-- Layar 4 -->
+      <section id="s4" aria-labelledby="t4" hidden>
+        <h1 id="t4">Atur pengingat</h1>
+        <p class="lead">Pilih kapan kamu ingin diingatkan sebelum kelas bubar.</p>
+        <div class="card">
+          <div class="lbl" id="remLbl">Waktu pengingat</div>
+          <div role="radiogroup" aria-labelledby="remLbl">
+            <div class="radio"><input type="radio" name="rem" id="r10" value="10"><label for="r10">10 menit sebelum kelas bubar</label></div>
+            <div class="radio"><input type="radio" name="rem" id="r5" value="5" checked><label for="r5">5 menit sebelum kelas bubar</label></div>
+            <div class="radio"><input type="radio" name="rem" id="r2" value="2"><label for="r2">2 menit sebelum kelas bubar</label></div>
+            <div class="radio"><input type="radio" name="rem" id="rc" value="custom"><label for="rc">Pilih jam sendiri</label></div>
+          </div>
+          <div class="field" id="customWrap" hidden>
+            <label for="customTime">Jam pengingat</label>
+            <input type="time" id="customTime">
+          </div>
+          <p class="error" id="errRem" role="alert"></p>
+        </div>
+        <div class="card">
+          <h2>Pratinjau notifikasi</h2>
+          <div class="notif">
+            <div class="logo" aria-hidden="true">GP</div>
+            <div><div class="t" id="notifT"></div><div class="m" id="notifM"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <dl class="summary" style="margin:0">
+            <dt>Kelas berikutnya</dt><dd id="sumClass"></dd>
+            <dt>Saran</dt><dd id="sumAdvice"></dd>
+          </dl>
+        </div>
+        <button class="btn" id="save">Simpan pengingat</button>
+        <button class="btn ghost" id="skip">Lewati dan atur ulang</button>
+        <p class="note">Prototype: pengingat disimpan di perangkat ini dan belum benar-benar dikirim sebagai notifikasi.</p>
+      </section>
+    </div>
+
+    <!-- Tab Pengingat -->
+    <div id="remTab" hidden>
+      <h1 id="tr">Pengingat</h1>
+      <p class="lead">Semua pengingat yang kamu simpan ada di sini.</p>
+      <div class="card">
+        <h2>Pengingat tersimpan</h2>
+        <div id="remList"></div>
+      </div>
+      <div class="card">
+        <h2>Tambah pengingat sendiri</h2>
+        <div class="field">
+          <label for="mText">Catatan</label>
+          <input type="text" id="mText" maxlength="60" value="Cek jadwal kelas berikutnya">
+        </div>
+        <div class="field">
+          <label for="mTime">Jam</label>
+          <input type="time" id="mTime">
+        </div>
+        <p class="error" id="errM" role="alert"></p>
+        <button class="btn small" id="addM">Tambah pengingat</button>
+      </div>
+      <p class="note">Prototype: pengingat disimpan di perangkat ini dan belum benar-benar dikirim sebagai notifikasi.</p>
+    </div>
+  </main>
+
+  <footer>Prototype awal Q3.03. Nilai perkiraan adalah contoh, bukan hasil pengukuran.</footer>
+</div>
+
+<nav class="tabs" aria-label="Menu utama">
+  <div class="in">
+    <button class="tab" id="tabPlanBtn" aria-current="page"><span class="e" aria-hidden="true">&#128205;</span>Rencana</button>
+    <button class="tab" id="tabRemBtn"><span class="e" aria-hidden="true">&#128276;</span><span>Pengingat<span class="badge" id="badge" hidden>0</span></span></button>
+  </div>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  // ===== DATA CONTOH (bukan hasil pengukuran). Ubah di sini untuk mencoba skenario lain. =====
+  // Pilihan lokasi (urutan tampil) dan zona contoh. Zona hanya dipakai untuk menentukan waktu contoh.
+  var PLACES = [
+    { name: 'Sistem Informasi', zone: 1 },
+    { name: 'Gedung Robotika', zone: 2 },
+    { name: 'Gedung FSAD', zone: 2 },
+    { name: 'Teknik Informatika', zone: 1 },
+    { name: 'Gedung FTK', zone: 3 },
+    { name: 'Teknik Transportasi Laut', zone: 3 },
+    { name: 'Tower 1', zone: 1 },
+    { name: 'Tower 2', zone: 1 },
+    { name: 'Kawasan Elektro', zone: 1 },
+    { name: 'Kawasan FTSPK', zone: 3 },
+    { name: 'Kawasan Vokasi', zone: 3 }
+  ];
+  // Waktu contoh (menit). walk = jalan kaki, ride = tempuh ojol, join = nebeng (kumpul + tempuh).
+  // Antar-zona dicari di ZONE_TIMES; satu zona memakai SAME. Tunggu ojol = WAIT_RIDE.
+  var SAME = { walk: 5, ride: 3, join: 4 };
+  var ZONE_TIMES = {
+    '1-2': { walk: 17, ride: 5, join: 7 },
+    '1-3': { walk: 20, ride: 6, join: 8 },
+    '2-3': { walk: 15, ride: 5, join: 7 }
+  };
+  var WAIT_RIDE = 8;
+  var BUFFER = 2; // menit cadangan
+  // ==========================================================================================
+
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = ['s1', 's2', 's3a', 's3b', 's4'];
+  var stepOf = { s1: 1, s2: 2, s3a: 3, s3b: 3, s4: 4 };
+  var state = {};
+  var lastAdvice = 's3a';
+  var reminders = [];
+  var toastTimer = null;
+
+  function zoneOf(name) {
+    for (var i = 0; i < PLACES.length; i++) { if (PLACES[i].name === name) return PLACES[i].zone; }
+    return 0;
+  }
+  function timesFor(a, b) {
+    var za = zoneOf(a), zb = zoneOf(b);
+    if (za === zb) return SAME;
+    var key = Math.min(za, zb) + '-' + Math.max(za, zb);
+    return ZONE_TIMES[key] || ZONE_TIMES['1-2'];
+  }
+  function fillSelect(sel, def) {
+    PLACES.forEach(function (p) {
+      var o = document.createElement('option');
+      o.textContent = p.name; o.value = p.name;
+      if (p.name === def) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+  fillSelect($('from'), 'Sistem Informasi');
+  fillSelect($('to'), 'Gedung Robotika');
+
+  function toMin(v) { var p = v.split(':'); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
+  function fmt(m) {
+    m = ((m % 1440) + 1440) % 1440;
+    var h = Math.floor(m / 60), mm = m % 60;
+    return (h < 10 ? '0' : '') + h + '.' + (mm < 10 ? '0' : '') + mm;
+  }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2200);
+  }
+
+  // ===== Penyimpanan pengingat (localStorage bila tersedia) =====
+  function loadRem() {
+    try { var v = JSON.parse(localStorage.getItem('gp_reminders') || '[]'); if (Array.isArray(v)) reminders = v; } catch (e) { reminders = []; }
+  }
+  function saveRem() { try { localStorage.setItem('gp_reminders', JSON.stringify(reminders)); } catch (e) {} }
+  function renderRem(freshId) {
+    var box = $('remList'); box.textContent = '';
+    var list = reminders.slice().sort(function (a, b) { return a.time - b.time; });
+    if (!list.length) {
+      var p = document.createElement('p'); p.className = 'empty';
+      p.textContent = 'Belum ada pengingat. Atur dari alur Rencana atau tambah sendiri di bawah.';
+      box.appendChild(p);
+    }
+    list.forEach(function (r) {
+      var row = document.createElement('div'); row.className = 'remitem' + (r.id === freshId ? ' fresh' : '');
+      var t = document.createElement('div'); t.className = 'rt'; t.textContent = fmt(r.time);
+      var x = document.createElement('div'); x.className = 'rx';
+      x.appendChild(document.createTextNode(r.text));
+      if (r.sub) { var s = document.createElement('small'); s.textContent = r.sub; x.appendChild(s); }
+      var d = document.createElement('button'); d.className = 'del'; d.type = 'button'; d.textContent = 'Hapus';
+      d.setAttribute('aria-label', 'Hapus pengingat pukul ' + fmt(r.time));
+      d.onclick = function () {
+        reminders = reminders.filter(function (q) { return q.id !== r.id; });
+        saveRem(); renderRem(); updateBadge(); toast('Pengingat dihapus');
+      };
+      row.appendChild(t); row.appendChild(x); row.appendChild(d); box.appendChild(row);
+    });
+    updateBadge();
+  }
+  function updateBadge() {
+    var b = $('badge'); b.textContent = reminders.length; b.hidden = !reminders.length;
+  }
+
+  // ===== Navigasi =====
+  function setTab(name) {
+    var plan = name === 'plan';
+    $('planTab').hidden = !plan; $('remTab').hidden = plan;
+    $('tabPlanBtn').setAttribute('aria-current', plan ? 'page' : 'false');
+    $('tabRemBtn').setAttribute('aria-current', plan ? 'false' : 'page');
+    $('progress').hidden = !plan || currentScreen() === 's1';
+    window.scrollTo(0, 0);
+  }
+  function currentScreen() {
+    for (var i = 0; i < screens.length; i++) { if (!$(screens[i]).hidden) return screens[i]; }
+    return 's1';
+  }
+  function show(id) {
+    screens.forEach(function (s) { $(s).hidden = (s !== id); });
+    var n = stepOf[id];
+    $('stepLabel').textContent = 'Langkah ' + n + ' dari 4';
+    var spans = document.querySelectorAll('.stepper span');
+    for (var i = 0; i < spans.length; i++) spans[i].className = (i < n) ? 'on' : '';
+    $('progress').hidden = (id === 's1');
+    var h = $(id).querySelector('h1');
+    if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+    window.scrollTo(0, 0);
+  }
+  $('tabPlanBtn').onclick = function () { setTab('plan'); };
+  $('tabRemBtn').onclick = function () { setTab('rem'); };
+
+  // ===== Layar 1 =====
+  $('swap').onclick = function () {
+    var a = $('from').value; $('from').value = $('to').value; $('to').value = a;
+  };
+  $('go1').onclick = function () {
+    var from = $('from').value, to = $('to').value;
+    var out = $('out').value, start = $('start').value;
+    var err = '';
+    if (!out || !start) err = 'Isi jam kelas bubar dan jam kelas berikutnya mulai.';
+    else if (from === to) err = 'Lokasi asal dan tujuan harus berbeda.';
+    else if (toMin(start) <= toMin(out)) err = 'Jam kelas berikutnya harus setelah jam kelas bubar.';
+    $('err1').textContent = err;
+    if (err) return;
+    var t = timesFor(from, to);
+    state = {
+      from: from, to: to, out: toMin(out), start: toMin(start), friend: $('friend').value === 'yes',
+      walk: t.walk, ride: WAIT_RIDE + t.ride, wait: WAIT_RIDE, trip: t.ride, join: t.join
+    };
+    state.gap = state.start - state.out;
+    state.modes = [
+      { k: 'walk', name: 'Jalan kaki', sub: 'langsung berangkat', icon: '🚶', min: state.walk, avail: true },
+      { k: 'join', name: 'Nebeng teman', sub: state.friend ? 'sudah janjian' : 'perlu teman searah', icon: '🤝', min: state.join, avail: state.friend },
+      { k: 'ride', name: 'Ojol', sub: 'tunggu ' + state.wait + ' + tempuh ' + state.trip, icon: '🏍️', min: state.ride, avail: true }
+    ];
+    state.modes.forEach(function (m) { m.ok = m.avail && (m.min + BUFFER <= state.gap); });
+    renderModes();
+    show('s2');
+  };
+
+  // ===== Layar 2 =====
+  function renderModes() {
+    $('gapText').textContent = 'Jeda ' + state.gap + ' menit dari ' + state.from + ' ke ' + state.to + '.';
+    var box = $('modes'); box.textContent = '';
+    state.modes.forEach(function (m) {
+      var card = document.createElement('div'); card.className = 'card';
+      var row = document.createElement('div'); row.className = 'mode' + (m.avail ? '' : ' off');
+      var ico = document.createElement('div'); ico.className = 'ico'; ico.setAttribute('aria-hidden', 'true'); ico.textContent = m.icon;
+      var mid = document.createElement('div'); mid.className = 'mid';
+      var nm = document.createElement('div'); nm.className = 'name'; nm.textContent = m.name;
+      var sb = document.createElement('div'); sb.className = 'sub'; sb.textContent = m.sub;
+      mid.appendChild(nm); mid.appendChild(sb);
+      var tm = document.createElement('div'); tm.className = 'time';
+      tm.appendChild(document.createTextNode(m.min + ' mnt'));
+      var chip = document.createElement('small'); var c = document.createElement('span'); c.className = 'chip';
+      if (!m.avail) { c.className += ' neutral'; c.textContent = 'Perlu teman'; }
+      else if (m.ok) { c.className += ' good'; c.textContent = 'Cukup waktu'; }
+      else { c.className += ' bad'; c.textContent = 'Tidak cukup'; }
+      chip.appendChild(c); tm.appendChild(chip);
+      row.appendChild(ico); row.appendChild(mid); row.appendChild(tm);
+      card.appendChild(row); box.appendChild(card);
+    });
+  }
+  $('back2').onclick = function () { show('s1'); };
+
+  function bar(el, parts, total) {
+    el.textContent = '';
+    parts.forEach(function (p) {
+      if (p.min <= 0) return;
+      var i = document.createElement('i'); i.className = p.cls; i.style.width = (p.min / total * 100) + '%';
+      el.appendChild(i);
+    });
+  }
+
+  $('go2').onclick = function () {
+    var avail = state.modes.filter(function (m) { return m.avail; });
+    var pick = null;
+    ['walk', 'join', 'ride'].forEach(function (k) {
+      if (pick) return;
+      var m = state.modes.filter(function (x) { return x.k === k; })[0];
+      if (m.ok) pick = m;
+    });
+    if (pick) {
+      var dep = state.start - pick.min - BUFFER;
+      var slack = state.gap - pick.min - BUFFER;
+      state.depart = dep;
+      $('adviceTag').textContent = 'Saran';
+      $('adviceClock').textContent = fmt(dep);
+      if (pick.k === 'walk') {
+        state.advice = 'Berangkat pukul ' + fmt(dep) + ' dengan jalan kaki';
+        $('adviceMain').textContent = 'Berangkat dengan jalan kaki';
+        $('adviceWhy').textContent = 'Perkiraan ' + pick.min + ' menit, tiba sekitar ' + fmt(dep + pick.min) + ', dengan cadangan ' + BUFFER + ' menit.';
+      } else if (pick.k === 'join') {
+        state.advice = 'Berangkat bersama temanmu pukul ' + fmt(dep);
+        $('adviceMain').textContent = 'Berangkat bersama temanmu';
+        $('adviceWhy').textContent = 'Jalan kaki tidak cukup. Nebeng diperkirakan ' + pick.min + ' menit, tiba sekitar ' + fmt(dep + pick.min) + '. Pastikan temanmu siap berangkat pada jam itu.';
+      } else {
+        state.advice = 'Pesan ojol sebelum pukul ' + fmt(dep);
+        $('adviceMain').textContent = 'Pesan ojol, jangan menunggu lebih lama';
+        $('adviceWhy').textContent = 'Jalan kaki tidak cukup. Ojol diperkirakan ' + pick.min + ' menit (tunggu ' + state.wait + ' + tempuh ' + state.trip + '), tiba sekitar ' + fmt(dep + pick.min) + '.';
+      }
+      var parts = [{ cls: 'slack', min: slack }, { cls: 'trip', min: pick.min }, { cls: 'buf', min: BUFFER }];
+      bar($('barA'), parts, state.gap);
+      $('endL').textContent = 'Bubar ' + fmt(state.out); $('endR').textContent = 'Mulai ' + fmt(state.start);
+      lastAdvice = 's3a';
+    } else {
+      var best = avail.reduce(function (a, b) { return a.min <= b.min ? a : b; });
+      if (best.min <= state.gap) {
+        // Pas, tanpa cadangan penuh
+        var dep2 = state.start - best.min;
+        state.depart = dep2;
+        $('adviceTag').textContent = 'Waktu pas';
+        $('adviceClock').textContent = fmt(dep2);
+        var nmm = best.k === 'walk' ? 'jalan kaki' : (best.k === 'join' ? 'nebeng teman' : 'ojol');
+        state.advice = 'Berangkat segera, sekitar pukul ' + fmt(dep2) + ', dengan ' + nmm;
+        $('adviceMain').textContent = 'Berangkat segera dengan ' + nmm;
+        $('adviceWhy').textContent = 'Waktunya pas: perkiraan ' + best.min + ' menit untuk jeda ' + state.gap + ' menit, tanpa cadangan penuh. Jangan menunda.';
+        var sl = Math.max(0, state.gap - best.min);
+        bar($('barA'), [{ cls: 'trip', min: best.min }, { cls: 'buf', min: sl }], state.gap);
+        $('endL').textContent = 'Bubar ' + fmt(state.out); $('endR').textContent = 'Mulai ' + fmt(state.start);
+        lastAdvice = 's3a';
+      } else {
+        var late = best.min - state.gap;
+        state.advice = 'Kemungkinan terlambat sekitar ' + late + ' menit';
+        $('lateMain').textContent = state.advice;
+        bar($('barB'), [{ cls: 'trip', min: state.gap }, { cls: 'late', min: late }], best.min);
+        $('endL2').textContent = 'Bubar ' + fmt(state.out); $('endR2').textContent = 'Perjalanan selesai ' + fmt(state.out + best.min);
+        lastAdvice = 's3b';
+      }
+    }
+    show(lastAdvice);
+  };
+  $('back3a').onclick = function () { show('s2'); };
+  $('back3b').onclick = function () { show('s2'); };
+
+  // ===== Layar 4 =====
+  function remTime() {
+    var v = document.querySelector('input[name="rem"]:checked').value;
+    if (v === 'custom') { var c = $('customTime').value; return c ? toMin(c) : null; }
+    return state.out - parseInt(v, 10);
+  }
+  function updateRem() {
+    var isC = document.querySelector('input[name="rem"]:checked').value === 'custom';
+    $('customWrap').hidden = !isC;
+    var t = remTime();
+    $('notifT').textContent = 'Gap Planner · ' + (t === null ? '--.--' : fmt(t));
+    $('notifM').textContent = 'Kelas bubar pukul ' + fmt(state.out) + '. ' + state.advice + '. Kelas berikutnya: ' + state.to + ' pukul ' + fmt(state.start) + '.';
+  }
+  function toReminder() {
+    $('sumClass').textContent = state.to + ', mulai ' + fmt(state.start);
+    $('sumAdvice').textContent = state.advice;
+    $('errRem').textContent = '';
+    $('customTime').value = fmt(state.out - 5).replace('.', ':');
+    updateRem();
+    show('s4');
+  }
+  $('go3a').onclick = toReminder;
+  $('go3b').onclick = toReminder;
+  document.querySelectorAll('input[name="rem"]').forEach(function (r) { r.onchange = updateRem; });
+  $('customTime').onchange = updateRem;
+  $('customTime').oninput = updateRem;
+
+  $('save').onclick = function () {
+    var t = remTime();
+    if (t === null) { $('errRem').textContent = 'Pilih jam pengingat.'; return; }
+    var id = Date.now() + Math.random();
+    reminders.push({ id: id, time: t, text: 'Kelas bubar pukul ' + fmt(state.out), sub: state.advice + ' · ke ' + state.to });
+    saveRem(); renderRem(id);
+    toast('Pengingat pukul ' + fmt(t) + ' disimpan');
+    resetPlan(); setTab('rem');
+  };
+  function resetPlan() { $('err1').textContent = ''; show('s1'); }
+  $('skip').onclick = resetPlan;
+
+  // ===== Tab Pengingat: tambah manual =====
+  $('addM').onclick = function () {
+    var txt = $('mText').value.trim(), tm = $('mTime').value;
+    var err = '';
+    if (!tm) err = 'Pilih jam pengingat.';
+    else if (!txt) err = 'Isi catatan pengingat.';
+    $('errM').textContent = err;
+    if (err) return;
+    var id = Date.now() + Math.random();
+    reminders.push({ id: id, time: toMin(tm), text: txt, sub: '' });
+    saveRem(); renderRem(id); toast('Pengingat pukul ' + fmt(toMin(tm)) + ' disimpan');
+    $('mTime').value = '';
+  };
+
+  loadRem(); renderRem();
+  setTab('plan');
+  $('progress').hidden = true;
+})();
+</script>
+</body>
+</html>
